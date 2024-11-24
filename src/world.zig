@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const WorldCoordinates = @import("WorldCoordinates.zig"); 
 const WorldCell = @import("WorldCell.zig");
 const WorldCellType = WorldCell.WorldCellType;
