@@ -21,20 +21,62 @@ pub fn toCellIndex(self: WorldCoordinates) u32 {
     return cell_index;
 }
 
+fn wrap(self: WorldCoordinates) WorldCoordinates {
+    var result = self;
+
+    if (result.x > World.WIDTH) {
+        result.x = result.x - World.WIDTH;
+    }
+    if (result.x < 0) {
+        result.x = World.WIDTH - result.x;
+    }
+    if (result.y > World.HEIGHT) {
+        result.y = result.y - World.HEIGHT;
+    }
+    if (result.y < 0) {
+        result.y = World.HEIGHT - result.y;
+    }
+    return result;
+}
+
+fn plusWrap(a: u32, b: u32, max: i32) u32 {
+    var result: i32 = @as(i32, @intCast(a)) + @as(i32, @intCast(b));
+    if (result > max - 1) {
+        result = result - max;
+    }
+    if (result < 0) {
+        result = max + result;
+    }
+    return @intCast(result);
+}
+
+fn minusWrap(a: u32, b: u32, max: i32) u32 {
+    var result: i32 = @as(i32, @intCast(a)) - @as(i32, @intCast(b));
+    if (result > max - 1) {
+        result = result - max;
+    }
+    if (result < 0) {
+        result = max + result;
+    }
+    return @intCast(result);
+}
+
 pub fn plus(self: WorldCoordinates, other: WorldCoordinates) WorldCoordinates {
-    // TODO: Implement wrap here.
-    return WorldCoordinates{
-        .x = self.x + other.x,
-        .y = self.y + other.y,
+    var result = WorldCoordinates{
+        .x = plusWrap(self.x, other.x, World.WIDTH),
+        .y = plusWrap(self.y, other.y, World.HEIGHT),
     };
+
+    return result.wrap();
 }
 
 pub fn minus(self: WorldCoordinates, other: WorldCoordinates) WorldCoordinates {
-    // TODO: Implement wrap here.
-    return WorldCoordinates{
-        .x = self.x - other.x,
-        .y = self.y - other.y,
+    var result = WorldCoordinates{
+        .x = minusWrap(self.x, other.x, World.WIDTH),
+        .y = minusWrap(self.y, other.y, World.HEIGHT),
     };
+
+    return result.wrap();
 }
 
 pub fn up(self: WorldCoordinates) WorldCoordinates {

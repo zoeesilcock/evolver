@@ -28,3 +28,34 @@ pub fn getValueAt(self: *World, coords: WorldCoordinates) WorldCellType {
 pub fn setValueAt(self: *World, coords: WorldCoordinates, value: WorldCellType) void {
     self.cells[coords.toCellIndex()].cell_type = value;
 }
+
+pub fn countNeighbors(self: *World, coords: WorldCoordinates, cell_type: WorldCellType) u32 {
+    var count: u32 = 0;
+
+    if (self.getValueAt(coords.up().left()) == cell_type) {
+        count += 1;
+    }
+    if (self.getValueAt(coords.up()) == cell_type) {
+        count += 1;
+    }
+    if (self.getValueAt(coords.up().right()) == cell_type) {
+        count += 1;
+    }
+    if (self.getValueAt(coords.left()) == cell_type) {
+        count += 1;
+    }
+    if (self.getValueAt(coords.right()) == cell_type) {
+        count += 1;
+    }
+    if (self.getValueAt(coords.down().left()) == cell_type) {
+        count += 1;
+    }
+    if (self.getValueAt(coords.down()) == cell_type) {
+        count += 1;
+    }
+    if (self.getValueAt(coords.down().right()) == cell_type) {
+        count += 1;
+    }
+
+    return count;
+}
