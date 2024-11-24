@@ -19,7 +19,7 @@ pub fn getImage() r.Image {
     while (i < World.WORLD_LENGTH) : (i += 1) {
         const y = @divFloor(i, World.WIDTH);
         const x = i - (y * World.WIDTH);
-        const color = if (world.getValueAt(x, y) == 0) r.GRAY else r.WHITE;
+        const color = if (world.getValueAt(x, y) == .Empty) r.BLACK else r.WHITE;
 
         r.ImageDrawPixel(&image, @intCast(x), @intCast(y), color);
     }
