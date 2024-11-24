@@ -1,6 +1,7 @@
 const std = @import("std");
 const r = @import("raylib.zig");
 const World = @import("World.zig");
+const WorldCoordinates = @import("WorldCoordinates.zig");
 
 var world: World = undefined;
 
@@ -10,6 +11,18 @@ pub fn init() void {
 }
 
 pub fn tick() void {
+    var i: u32 = 0;
+    while (i < World.WORLD_LENGTH) : (i += 1) {
+        const cell = world.cells[i];
+        switch(cell.cell_type) {
+            .Conways => tickConways(WorldCoordinates.fromCellIndex(i)),
+            .Empty => {},
+        }
+    }
+}
+
+fn tickConways(coords: WorldCoordinates) void {
+    _ = coords;
 }
 
 pub fn getImage() r.Image {
@@ -17,11 +30,10 @@ pub fn getImage() r.Image {
 
     var i: u32 = 0;
     while (i < World.WORLD_LENGTH) : (i += 1) {
-        const y = @divFloor(i, World.WIDTH);
-        const x = i - (y * World.WIDTH);
-        const color = if (world.getValueAt(x, y) == .Empty) r.BLACK else r.WHITE;
+        const coords = WorldCoordinates.fromCellIndex(i);
+        const color = if (world.getValueAt(coords) == .Empty) r.BLACK else r.WHITE;
 
-        r.ImageDrawPixel(&image, @intCast(x), @intCast(y), color);
+        r.ImageDrawPixel(&image, @intCast(coords.x), @intCast(coords.y), color);
     }
 
     return image;

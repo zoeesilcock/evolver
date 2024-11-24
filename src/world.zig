@@ -1,4 +1,5 @@
 const std = @import("std");
+const WorldCoordinates = @import("WorldCoordinates.zig"); 
 const WorldCell = @import("WorldCell.zig");
 const WorldCellType = WorldCell.WorldCellType;
 
@@ -11,26 +12,19 @@ cells: [WORLD_LENGTH]WorldCell = [1]WorldCell{WorldCell{ .cell_type = .Empty }} 
 const World = @This();
 
 pub fn init(self: *World) void {
-    const x = WIDTH / 2;
-    const y = HEIGHT / 2;
+    const center = WorldCoordinates{ .x = WIDTH / 2, .y = HEIGHT / 2 };
 
-    self.setValueAt(x, y, .Conways);
-    self.setValueAt(x, y - 1, .Conways);
-    self.setValueAt(x - 1, y, .Conways);
-    self.setValueAt(x, y + 1, .Conways);
-    self.setValueAt(x + 1, y + 1, .Conways);
+    self.setValueAt(center, .Conways);
+    self.setValueAt(center.up(), .Conways);
+    self.setValueAt(center.left(), .Conways);
+    self.setValueAt(center.down(), .Conways);
+    self.setValueAt(center.down().right(), .Conways);
 }
 
-fn cellIndexFromCoordinates(x: u32, y: u32) u32 {
-    const cell_index = x + y * WIDTH;
-    std.debug.assert(cell_index < WORLD_LENGTH);
-    return cell_index;
+pub fn getValueAt(self: *World, coords: WorldCoordinates) WorldCellType {
+    return self.cells[coords.toCellIndex()].cell_type;
 }
 
-pub fn getValueAt(self: *World, x: u32, y: u32) WorldCellType {
-    return self.cells[cellIndexFromCoordinates(x, y)].cell_type;
-}
-
-pub fn setValueAt(self: *World, x: u32, y: u32, value: WorldCellType) void {
-    self.cells[cellIndexFromCoordinates(x, y)].cell_type = value;
+pub fn setValueAt(self: *World, coords: WorldCoordinates, value: WorldCellType) void {
+    self.cells[coords.toCellIndex()].cell_type = value;
 }
