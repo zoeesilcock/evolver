@@ -19,12 +19,13 @@ pub fn init() void {
     world.init();
 }
 
-pub fn drawWorld(out: *r.Image) void {
+pub fn drawWorld() void {
     var i: u32 = 0;
     while (i < World.WORLD_LENGTH) : (i += 1) {
         const coords = WorldCoordinates.fromCellIndex(i);
-        const color = if (world.getValueAt(coords) == .Empty) r.BLACK else r.WHITE;
-        r.ImageDrawPixel(out, @intCast(coords.x), @intCast(coords.y), color);
+        if (world.getValueAt(coords) != .Empty) {
+            r.DrawPixel(@intCast(coords.x), @intCast(coords.y), r.WHITE);
+        }
     }
 }
 
