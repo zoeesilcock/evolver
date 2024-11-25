@@ -4,7 +4,7 @@ const WorldCoordinates = @import("WorldCoordinates.zig");
 const WorldCell = @import("WorldCell.zig");
 const WorldCellType = WorldCell.WorldCellType;
 
-pub const WIDTH = 100;
+pub const WIDTH = 75;
 pub const HEIGHT = 75;
 pub const WORLD_LENGTH = WIDTH * HEIGHT;
 

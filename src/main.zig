@@ -17,17 +17,23 @@ pub fn main() !void {
     const source_rect: r.Rectangle = .{
         .x = 0,
         .y = 0,
-        .width = @floatFromInt(world_image.width),
-        .height = @floatFromInt(world_image.height),
+        .width = @floatFromInt(World.WIDTH),
+        .height = @floatFromInt(World.HEIGHT),
     };
-    const dest_rect: r.Rectangle = .{ .x = 0, .y = 0, .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT };
+    const scale: f32 = @as(f32, @floatFromInt(WINDOW_HEIGHT)) / @as(f32, @floatFromInt(World.WIDTH));
+    const dest_rect: r.Rectangle = .{ 
+        .x = WINDOW_WIDTH - source_rect.width * scale,
+        .y = 0,
+        .width = source_rect.width * scale,
+        .height = source_rect.height * scale,
+    };
 
     while (!r.WindowShouldClose()) {
         r.BeginDrawing();
 
         evolver.tick();
 
-        r.ClearBackground(r.BLACK);
+        r.ClearBackground(r.DARKGRAY);
 
         evolver.drawWorld(&world_image);
         r.DrawTexturePro(
