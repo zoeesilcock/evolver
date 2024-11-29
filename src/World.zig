@@ -4,9 +4,9 @@ const WorldCoordinates = @import("WorldCoordinates.zig");
 const WorldCell = @import("WorldCell.zig");
 const WorldCellType = WorldCell.WorldCellType;
 
-pub const WIDTH = 75;
-pub const HEIGHT = 75;
-pub const WORLD_LENGTH = WIDTH * HEIGHT;
+pub const WIDTH: i32 = 75;
+pub const HEIGHT: i32 = 75;
+pub const WORLD_LENGTH: u32 = WIDTH * HEIGHT;
 
 cells: [WORLD_LENGTH]WorldCell = [1]WorldCell{WorldCell{ .cell_type = .Empty }} ** WORLD_LENGTH,
 
@@ -33,29 +33,16 @@ pub fn setValueAt(self: *World, coords: WorldCoordinates, value: WorldCellType) 
 pub fn countNeighbors(self: *World, coords: WorldCoordinates, cell_type: WorldCellType) u32 {
     var count: u32 = 0;
 
-    if (self.getValueAt(coords.up().left()) == cell_type) {
-        count += 1;
-    }
-    if (self.getValueAt(coords.up()) == cell_type) {
-        count += 1;
-    }
-    if (self.getValueAt(coords.up().right()) == cell_type) {
-        count += 1;
-    }
-    if (self.getValueAt(coords.left()) == cell_type) {
-        count += 1;
-    }
-    if (self.getValueAt(coords.right()) == cell_type) {
-        count += 1;
-    }
-    if (self.getValueAt(coords.down().left()) == cell_type) {
-        count += 1;
-    }
-    if (self.getValueAt(coords.down()) == cell_type) {
-        count += 1;
-    }
-    if (self.getValueAt(coords.down().right()) == cell_type) {
-        count += 1;
+    var x: i32 = -1;
+    while (x <= 1) : (x += 1) {
+        var y: i32 = -1;
+        while (y <= 1) : (y += 1) {
+            if (!(x == 0 and y == 0)) {
+                if (self.getValueAt(coords.plus(.{ .x = x, .y = y })) == cell_type) {
+                    count += 1;
+                }
+            }
+        }
     }
 
     return count;
