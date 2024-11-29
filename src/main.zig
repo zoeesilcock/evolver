@@ -4,13 +4,18 @@ const r = @import("raylib.zig");
 const evolver = @import("root.zig");
 const World = @import("world.zig");
 
+const DEBUG = @import("builtin").mode == std.builtin.OptimizeMode.Debug;
+
 const WINDOW_WIDTH = 800;
 const WINDOW_HEIGHT = 600;
 const TARGET_FPS = 120;
 
 pub fn main() !void {
     r.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Evolver");
-    r.SetTargetFPS(TARGET_FPS);
+
+    if (!DEBUG) {
+        r.SetTargetFPS(TARGET_FPS);
+    }
 
     evolver.init();
 
