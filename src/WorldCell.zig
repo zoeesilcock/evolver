@@ -3,5 +3,5 @@ pub const WorldCellType = enum {
     Conways,
 };
 
-cell_type: WorldCellType
+cell_type: WorldCellType = .Empty,
 

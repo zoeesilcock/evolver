@@ -8,25 +8,25 @@ pub const WIDTH: i32 = 75;
 pub const HEIGHT: i32 = 75;
 pub const WORLD_LENGTH: u32 = WIDTH * HEIGHT;
 
-cells: [WORLD_LENGTH]WorldCell = [1]WorldCell{WorldCell{ .cell_type = .Empty }} ** WORLD_LENGTH,
+cells: [WORLD_LENGTH]WorldCell = [1]WorldCell{WorldCell{}} ** WORLD_LENGTH,
 
 const World = @This();
 
 pub fn init(self: *World) void {
     const center = WorldCoordinates{ .x = WIDTH / 2, .y = HEIGHT / 2 };
 
-    self.setValueAt(center, .Conways);
-    self.setValueAt(center.up(), .Conways);
-    self.setValueAt(center.left(), .Conways);
-    self.setValueAt(center.down(), .Conways);
-    self.setValueAt(center.down().right(), .Conways);
+    self.setTypeAt(center, .Conways);
+    self.setTypeAt(center.up(), .Conways);
+    self.setTypeAt(center.left(), .Conways);
+    self.setTypeAt(center.down(), .Conways);
+    self.setTypeAt(center.down().right(), .Conways);
 }
 
-pub fn getValueAt(self: *World, coords: WorldCoordinates) WorldCellType {
+pub fn getTypeAt(self: *World, coords: WorldCoordinates) WorldCellType {
     return self.cells[coords.toCellIndex()].cell_type;
 }
 
-pub fn setValueAt(self: *World, coords: WorldCoordinates, value: WorldCellType) void {
+pub fn setTypeAt(self: *World, coords: WorldCoordinates, value: WorldCellType) void {
     self.cells[coords.toCellIndex()].cell_type = value;
 }
 
@@ -38,7 +38,7 @@ pub fn countNeighbors(self: *World, coords: WorldCoordinates, cell_type: WorldCe
         var y: i32 = -1;
         while (y <= 1) : (y += 1) {
             if (!(x == 0 and y == 0)) {
-                if (self.getValueAt(coords.plus(.{ .x = x, .y = y })) == cell_type) {
+                if (self.getTypeAt(coords.plus(.{ .x = x, .y = y })) == cell_type) {
                     count += 1;
                 }
             }

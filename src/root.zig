@@ -23,7 +23,7 @@ pub fn drawWorld() void {
     var i: u32 = 0;
     while (i < World.WORLD_LENGTH) : (i += 1) {
         const coords = WorldCoordinates.fromCellIndex(i);
-        if (world.getValueAt(coords) != .Empty) {
+        if (world.getTypeAt(coords) != .Empty) {
             r.DrawPixel(@intCast(coords.x), @intCast(coords.y), r.WHITE);
         }
     }
@@ -34,19 +34,18 @@ pub fn tick() void {
 
     var i: u32 = 0;
     while (i < World.WORLD_LENGTH) : (i += 1) {
-        const cell = world.cells[i];
-        tickConways(cell, WorldCoordinates.fromCellIndex(i));
+        tickConways(world.cells[i], WorldCoordinates.fromCellIndex(i));
     }
 
     var c: u32 = 0;
     while (c < change_count) : (c += 1) {
         const change = changes[c];
-        world.setValueAt(change.coords, change.new_cell_type);
+        world.setTypeAt(change.coords, change.new_cell_type);
     }
 }
 
-fn tickConways(value: WorldCell, coords: WorldCoordinates) void {
-    switch(value.cell_type) {
+fn tickConways(cell: WorldCell, coords: WorldCoordinates) void {
+    switch(cell.cell_type) {
         .Conways => {
             const aliveNeighbors = world.countNeighbors(coords, .Conways);
             if (aliveNeighbors < 2) {
