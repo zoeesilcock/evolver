@@ -26,6 +26,13 @@ pub fn build(b: *std.Build) void {
     });
     exe.linkLibrary(raylib_dep.artifact("raylib"));
 
+    const raygui_dep = b.dependency("raygui", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.addCSourceFile(.{ .file = b.path("src/dependencies/raygui.c") });
+    exe.addIncludePath(raygui_dep.path("src"));
+
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {

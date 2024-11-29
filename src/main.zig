@@ -1,8 +1,9 @@
 const std = @import("std");
-const r = @import("raylib.zig");
+const r = @import("dependencies/raylib.zig");
 
 const evolver = @import("root.zig");
 const World = @import("world.zig");
+const UI = @import("UI.zig");
 
 const DEBUG = @import("builtin").mode == std.builtin.OptimizeMode.Debug;
 
@@ -33,9 +34,16 @@ pub fn main() !void {
         .width = source_rect.width * scale,
         .height = source_rect.height * scale,
     };
+    var ui: UI = .{};
 
     while (!r.WindowShouldClose()) {
-        evolver.tick();
+        if (ui.time_state != .Stopped) {
+            evolver.tick();
+
+            if (ui.time_state == .ProcessOneTick) {
+                ui.time_state = .Stopped;
+            }
+        }
 
         r.BeginTextureMode(render_texture);
         {
@@ -48,7 +56,8 @@ pub fn main() !void {
         {
             r.ClearBackground(r.DARKGRAY);
             r.DrawTexturePro(render_texture.texture, source_rect, dest_rect, r.Vector2{}, 0, r.WHITE);
-            r.DrawFPS(0, 0);
+            ui.draw(WINDOW_WIDTH - source_rect.width * scale);
+            r.DrawFPS(10, WINDOW_HEIGHT - 30);
         }
         r.EndDrawing();
     }

@@ -1,5 +1,5 @@
 const std = @import("std");
-const r = @import("raylib.zig");
+const r = @import("dependencies/raylib.zig");
 
 const World = @import("World.zig");
 const WorldCell = @import("WorldCell.zig");
