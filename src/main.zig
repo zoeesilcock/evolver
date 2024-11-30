@@ -8,6 +8,7 @@ const DEBUG = @import("builtin").mode == std.builtin.OptimizeMode.Debug;
 const WINDOW_WIDTH = 800;
 const WINDOW_HEIGHT = 600;
 const TARGET_FPS = 120;
+const LIB_PATH = "zig-out/lib/libevolver.dylib";
 
 const EvolverStatePtr = *anyopaque;
 
@@ -17,6 +18,8 @@ var evolverReload: *const fn(EvolverStatePtr) void = undefined;
 var evolverTick: *const fn(EvolverStatePtr) void = undefined;
 var evolverDraw: *const fn(EvolverStatePtr) void = undefined;
 var evolverDrawUI: *const fn(EvolverStatePtr, f32) void = undefined;
+
+var ddlLastModified: i128 = 0;
 
 pub fn main() !void {
     r.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Evolver");
@@ -45,7 +48,7 @@ pub fn main() !void {
     };
 
     while (!r.WindowShouldClose()) {
-        if (r.IsKeyPressed(r.KEY_F5)) {
+        if (r.IsKeyPressed(r.KEY_F5) or try dllHasChanged()) {
             unloadDll() catch unreachable;
             recompileDll(allocator) catch {
                 std.debug.print("Failed to recompile the lib.\n", .{});
@@ -78,7 +81,7 @@ pub fn main() !void {
 
 fn loadDll() !void {
     if (evolver_dyn_lib != null) return error.AlreadyLoaded;
-    var dyn_lib = std.DynLib.open("zig-out/lib/libevolver.dylib") catch {
+    var dyn_lib = std.DynLib.open(LIB_PATH) catch {
         return error.OpenFail;
     };
 
@@ -90,6 +93,18 @@ fn loadDll() !void {
     evolverDrawUI = dyn_lib.lookup(@TypeOf(evolverDrawUI), "drawUI") orelse return error.LookupFail;
 
     std.debug.print("Evolver lib loaded.\n", .{});
+}
+
+fn dllHasChanged() !bool {
+    var result = false;
+    const stat = try std.fs.cwd().statFile(LIB_PATH);
+
+    if (stat.mtime > ddlLastModified) {
+        ddlLastModified = stat.mtime;
+        result = true;
+    }
+
+    return result;
 }
 
 fn unloadDll() !void {
