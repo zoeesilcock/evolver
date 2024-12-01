@@ -11,7 +11,9 @@ const LIB_PATH = "zig-out/lib/libevolver.dylib";
 const EvolverStatePtr = *anyopaque;
 
 var evolver_dyn_lib: ?std.DynLib = null;
+var build_process: ?std.process.Child = null;
 var dyn_lib_last_modified: i128 = 0;
+var src_last_modified: i128 = 0;
 
 var evolverInit: *const fn(u32, u32) EvolverStatePtr = undefined;
 var evolverReload: *const fn(EvolverStatePtr) void = undefined;
@@ -30,11 +32,18 @@ pub fn main() !void {
     const state = evolverInit(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     while (!r.WindowShouldClose()) {
-        if (r.IsKeyPressed(r.KEY_F5) or try dllHasChanged()) {
+        if (r.IsKeyPressed(r.KEY_F5) or srcHasChanged()) {
+            try recompileDll(allocator);
+        }
+
+        if (dllHasChanged()) {
+            if (build_process != null) {
+                checkRecompileResult() catch {
+                    std.debug.print("Failed to recompile the lib.\n", .{});
+                };
+            }
+
             unloadDll() catch unreachable;
-            recompileDll(allocator) catch {
-                std.debug.print("Failed to recompile the lib.\n", .{});
-            };
             loadDll() catch @panic("Failed to load lib.");
             evolverReload(state);
         }
@@ -45,6 +54,10 @@ pub fn main() !void {
         {
             evolverDraw(state);
             r.DrawFPS(10, WINDOW_HEIGHT - 30);
+
+            if (build_process != null) {
+                r.DrawText("Re-compiling", 10, WINDOW_HEIGHT - 60, 16, r.WHITE);
+            }
         }
         r.EndDrawing();
     }
@@ -67,12 +80,24 @@ fn loadDll() !void {
     std.debug.print("Evolver lib loaded.\n", .{});
 }
 
-fn dllHasChanged() !bool {
+fn dllHasChanged() bool {
     var result = false;
-    const stat = try std.fs.cwd().statFile(LIB_PATH);
+    const stat = std.fs.cwd().statFile(LIB_PATH) catch return false;
 
     if (stat.mtime > dyn_lib_last_modified) {
         dyn_lib_last_modified = stat.mtime;
+        result = true;
+    }
+
+    return result;
+}
+
+fn srcHasChanged() bool {
+    var result = false;
+    const stat = std.fs.cwd().statFile("src") catch return false;
+
+    if (stat.mtime > src_last_modified) {
+        src_last_modified = stat.mtime;
         result = true;
     }
 
@@ -95,14 +120,20 @@ fn recompileDll(allocator: std.mem.Allocator) !void {
         "-Dlib_only=true",
     };
 
-    var build_process = std.process.Child.init(&process_args, allocator);
-    try build_process.spawn();
+    build_process = std.process.Child.init(&process_args, allocator);
+    try build_process.?.spawn();
+}
 
-    const term = try build_process.wait();
-    switch (term) {
-        .Exited => |exited| {
-            if (exited == 2) return error.RecompileFail;
-        },
-        else => return
+fn checkRecompileResult() !void {
+    if (build_process) |*process| {
+        const term = try process.wait();
+        switch (term) {
+            .Exited => |exited| {
+                if (exited == 2) return error.RecompileFail;
+            },
+            else => return
+        }
+
+        build_process = null;
     }
 }
