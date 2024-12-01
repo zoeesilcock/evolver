@@ -27,8 +27,11 @@ pub fn main() !void {
         r.SetTargetFPS(TARGET_FPS);
     }
 
-    const allocator = std.heap.c_allocator;
     loadDll() catch @panic("Failed to load the evolver lib.");
+    _ = dllHasChanged();
+    _ = srcHasChanged();
+
+    const allocator = std.heap.c_allocator;
     const state = evolverInit(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     while (!r.WindowShouldClose()) {
