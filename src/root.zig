@@ -144,7 +144,7 @@ export fn draw(state_ptr: *anyopaque) void {
             while (i < World.WORLD_LENGTH) : (i += 1) {
                 const coords = WorldCoordinates.fromCellIndex(i);
                 if (state.world.getTypeAt(coords) != .Empty) {
-                    r.DrawPixel(@intCast(coords.x), @intCast(coords.y), r.WHITE);
+                    r.DrawCube(r.Vector3{ .x = @floatFromInt(coords.x), .y = @floatFromInt(coords.y), .z = 0 }, 1, 1, 1, r.WHITE);
                 }
             }
         }
