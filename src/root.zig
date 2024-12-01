@@ -12,19 +12,33 @@ const TimeProgressState = enum(u32) {
     Running,
 };
 
+const MAX_WORLD_CHANGE_COUNT = 1024;
+
+const WorldChange = struct {
+    coords: WorldCoordinates,
+    new_cell_type: WorldCell.WorldCellType,
+};
+
 pub const State = struct {
     allocator: std.mem.Allocator,
-    time_state: TimeProgressState = .Stopped,
-    world: World = World{},
-    change_count: u32 = 0,
-    changes: [1024]WorldChange = [1]WorldChange{undefined} ** 1024,
+    time_state: TimeProgressState,
+    world: World,
+    change_count: u32,
+    changes: [MAX_WORLD_CHANGE_COUNT]WorldChange,
+
+    window_width: u32,
+    window_height: u32,
+    render_texture: ?r.RenderTexture2D,
+    source_rect: ?r.Rectangle,
+    dest_rect: ?r.Rectangle,
+    world_draw_scale: f32,
 
     pub fn addChange(self: *State, change: WorldChange) void {
         self.changes[self.change_count] = change;
         self.change_count += 1;
     }
 
-    fn tickConways(self: *State, cell: WorldCell, coords: WorldCoordinates) void {
+    pub fn tickConways(self: *State, cell: WorldCell, coords: WorldCoordinates) void {
         switch(cell.cell_type) {
             .Conways => {
                 const aliveNeighbors = self.world.countNeighbors(coords, .Conways);
@@ -42,19 +56,47 @@ pub const State = struct {
             },
         }
     }
+
+    pub fn initializeRenderTexture(self: *State) void {
+        self.render_texture = r.LoadRenderTexture(World.WIDTH, World.HEIGHT);
+
+        self.world_draw_scale =
+            @as(f32, @floatFromInt(self.window_height)) /
+            @as(f32, @floatFromInt(World.WIDTH));
+        self.source_rect = r.Rectangle{
+            .x = 0,
+            .y = 0,
+            .width = @floatFromInt(self.render_texture.?.texture.width),
+            .height = @floatFromInt(self.render_texture.?.texture.height),
+        };
+        self.dest_rect = r.Rectangle{ 
+            .x = @as(f32, @floatFromInt(self.window_width)) - self.source_rect.?.width * self.world_draw_scale,
+            .y = 0,
+            .width = self.source_rect.?.width * self.world_draw_scale,
+            .height = self.source_rect.?.height * self.world_draw_scale,
+        };
+    }
 };
 
-const WorldChange = struct {
-    coords: WorldCoordinates,
-    new_cell_type: WorldCell.WorldCellType,
-};
-
-export fn init() *anyopaque {
+export fn init(window_width: u32, window_height: u32) *anyopaque {
     var allocator = std.heap.c_allocator;
     var state: *State = allocator.create(State) catch @panic("Out of memory");
 
-    state.world.init();
     state.allocator = allocator;
+
+    state.world = World{};
+    state.world.init();
+
+    state.time_state = .Stopped;
+    state.change_count = 0;
+    state.changes = [1]WorldChange{undefined} ** MAX_WORLD_CHANGE_COUNT;
+
+    state.window_width = window_width;
+    state.window_height = window_height;
+    state.render_texture = null;
+    state.source_rect = null;
+    state.dest_rect = null;
+    state.world_draw_scale = 1;
 
     return state;
 }
@@ -89,16 +131,31 @@ export fn tick(state_ptr: *anyopaque) void {
 export fn draw(state_ptr: *anyopaque) void {
     var state: *State = @ptrCast(@alignCast(state_ptr));
 
-    var i: u32 = 0;
-    while (i < World.WORLD_LENGTH) : (i += 1) {
-        const coords = WorldCoordinates.fromCellIndex(i);
-        if (state.world.getTypeAt(coords) != .Empty) {
-            r.DrawPixel(@intCast(coords.x), @intCast(coords.y), r.WHITE);
+    if (state.render_texture == null) {
+        state.initializeRenderTexture();
+    }
+
+    if (state.render_texture) |render_texture| {
+        r.BeginTextureMode(render_texture);
+        {
+            r.ClearBackground(r.BLACK);
+
+            var i: u32 = 0;
+            while (i < World.WORLD_LENGTH) : (i += 1) {
+                const coords = WorldCoordinates.fromCellIndex(i);
+                if (state.world.getTypeAt(coords) != .Empty) {
+                    r.DrawPixel(@intCast(coords.x), @intCast(coords.y), r.WHITE);
+                }
+            }
+        }
+        r.EndTextureMode();
+
+        {
+            r.ClearBackground(r.DARKGRAY);
+            r.DrawTexturePro(render_texture.texture, state.source_rect.?, state.dest_rect.?, r.Vector2{}, 0, r.WHITE);
+
+            UI.draw(state, @as(f32, @floatFromInt(state.window_width)) - state.source_rect.?.width * state.world_draw_scale);
         }
     }
 }
 
-export fn drawUI(state_ptr: *anyopaque, width: f32) void {
-    const state: *State = @ptrCast(@alignCast(state_ptr));
-    UI.draw(state, width);
-}
