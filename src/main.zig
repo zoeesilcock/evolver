@@ -6,7 +6,9 @@ const DEBUG = @import("builtin").mode == std.builtin.OptimizeMode.Debug;
 const WINDOW_WIDTH = 800;
 const WINDOW_HEIGHT = 600;
 const TARGET_FPS = 120;
-const LIB_PATH = "zig-out/lib/libevolver.dylib";
+const PLATFORM = @import("builtin").os.tag;
+const LIB_EXTENSION = if (PLATFORM == .windows) "dll" else if (PLATFORM == .macos) "dylib" else "so";
+const LIB_PATH = "zig-out/lib/libevolver." ++ LIB_EXTENSION;
 
 const EvolverStatePtr = *anyopaque;
 
