@@ -4,13 +4,9 @@
     .minimum_zig_version = "0.15.1",
     .fingerprint = 0x5f661d785cd3694,
     .dependencies = .{
-        .raylib = .{
-            .url = "git+https://github.com/raysan5/raylib.git#9f831428e6be0eba8762a154e3e9139d4f071970",
-            .hash = "12203bf36745f79a1c8b84bad6aacd5582b7321a54a4dc05819d499738a15767ea7b",
-        },
-        .raygui = .{
-            .url = "https://github.com/raysan5/raygui/archive/refs/tags/4.0.zip",
-            .hash = "1220b64eaeaf55609b3152b64d108ea73981c9689e783bddc68c80e77d275ebac164",
+        .runtime = .{
+            .url = "git+https://github.com/zoeesilcock/gamedev-playground.git#b1582870c7f203f444d894efa04c9423f25a580a",
+            .hash = "gamedev_playground-0.4.0-_fYZMXVnNABAT4N1IHNQdVPc5blQKqGbAcLcp6wBPsS2",
         },
     },
     .paths = .{

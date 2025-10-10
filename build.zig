@@ -1,11 +1,18 @@
 const std = @import("std");
+const runtime = @import("runtime");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const lib_only = b.option(bool, "lib_only", "only build the shared library") orelse false;
+    const lib_base_name = b.option([]const u8, "lib_base_name", "name of the shared library") orelse "evolver";
+    const internal = b.option(bool, "internal", "include debug interface") orelse true;
 
-    const lib_module = b.createModule(.{
+    const build_options = b.addOptions();
+    build_options.addOption(bool, "internal", internal);
+    build_options.addOption([]const u8, "lib_base_name", lib_base_name);
+
+    const module = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
@@ -13,63 +20,35 @@ pub fn build(b: *std.Build) void {
     const lib = b.addLibrary(.{
         .name = "evolver",
         .linkage = .dynamic,
-        .root_module = lib_module,
+        .root_module = module,
     });
 
     const lib_unit_tests = b.addTest(.{
-        .root_module = lib_module,
+        .root_module = module,
     });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
-    const raylib_dep = b.dependency("raylib", .{
-        .target = target,
-        .optimize = optimize,
-        .linkage = .dynamic,
-    });
-    const raygui_dep = b.dependency("raygui", .{
-        .target = target,
-        .optimize = optimize,
-        .linkage = .dynamic,
-    });
+    module.addOptions("build_options", build_options);
 
-    lib.linkLibrary(raylib_dep.artifact("raylib"));
-    lib.addCSourceFile(.{ .file = b.path("src/dependencies/raygui.c") });
-    lib.addIncludePath(raygui_dep.path("src"));
+    const runtime_dep = b.dependency("runtime", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    if (runtime.getSDL(runtime_dep.builder, target, optimize)) |sdl_lib| {
+        module.linkLibrary(sdl_lib);
+        b.installArtifact(sdl_lib);
+    }
+
+    const sdl_mod = runtime_dep.module("sdl");
+    module.addImport("sdl", sdl_mod);
 
     b.installArtifact(lib);
 
     if (!lib_only) {
-        const module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = target,
-            .optimize = optimize,
-        });
-        const exe = b.addExecutable(.{
-            .name = "evolver",
-            .root_module = module,
-        });
-        b.installArtifact(exe);
-
-        exe.linkLibrary(raylib_dep.artifact("raylib"));
-        exe.addCSourceFile(.{ .file = b.path("src/dependencies/raygui.c") });
-        exe.addIncludePath(raygui_dep.path("src"));
-
-        const run_cmd = b.addRunArtifact(exe);
-        run_cmd.step.dependOn(b.getInstallStep());
-        if (b.args) |args| {
-            run_cmd.addArgs(args);
-        }
-
-        const run_step = b.step("run", "Run the app");
-        run_step.dependOn(&run_cmd.step);
-
-        const exe_unit_tests = b.addTest(.{
-            .root_module = module,
-        });
-        const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-
         const test_step = b.step("test", "Run unit tests");
         test_step.dependOn(&run_lib_unit_tests.step);
-        test_step.dependOn(&run_exe_unit_tests.step);
+
+        const exe = runtime.buildExecutable(runtime_dep.builder, b, build_options, target, optimize, test_step);
+        b.installArtifact(exe);
     }
 }
