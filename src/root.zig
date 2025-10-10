@@ -1,10 +1,16 @@
 const std = @import("std");
-const r = @import("dependencies/raylib.zig");
+const r = @import("dependencies/raylib.zig").r;
 
 const UI = @import("UI.zig");
 const World = @import("World.zig");
 const WorldCell = @import("WorldCell.zig");
 const WorldCoordinates = @import("WorldCoordinates.zig");
+
+const DebugAllocator = std.heap.DebugAllocator(.{
+    .enable_memory_limit = true,
+    .retain_metadata = true,
+    .never_unmap = true,
+});
 
 const TimeProgressState = enum(u32) {
     Stopped,
@@ -39,7 +45,7 @@ pub const State = struct {
     }
 
     pub fn tickConways(self: *State, cell: WorldCell, coords: WorldCoordinates) void {
-        switch(cell.cell_type) {
+        switch (cell.cell_type) {
             .Conways => {
                 const aliveNeighbors = self.world.countNeighbors(coords, .Conways);
                 if (aliveNeighbors < 2) {
@@ -69,7 +75,7 @@ pub const State = struct {
             .width = @floatFromInt(self.render_texture.?.texture.width),
             .height = @floatFromInt(self.render_texture.?.texture.height),
         };
-        self.dest_rect = r.Rectangle{ 
+        self.dest_rect = r.Rectangle{
             .x = @as(f32, @floatFromInt(self.window_width)) - self.source_rect.?.width * self.world_draw_scale,
             .y = 0,
             .width = self.source_rect.?.width * self.world_draw_scale,
@@ -79,24 +85,32 @@ pub const State = struct {
 };
 
 export fn init(window_width: u32, window_height: u32) *anyopaque {
-    var allocator = std.heap.c_allocator;
+    var backing_allocator = std.heap.c_allocator;
+
+    var game_allocator = (backing_allocator.create(DebugAllocator) catch @panic("Failed to initialize game allocator."));
+    game_allocator.* = .init;
+
+    var allocator = game_allocator.allocator();
+
     var state: *State = allocator.create(State) catch @panic("Out of memory");
+    state.* = .{
+        .allocator = allocator,
 
-    state.allocator = allocator;
+        .world = .{},
 
-    state.world = World{};
+        .time_state = .Stopped,
+        .change_count = 0,
+        .changes = [1]WorldChange{undefined} ** MAX_WORLD_CHANGE_COUNT,
+
+        .window_width = window_width,
+        .window_height = window_height,
+        .render_texture = null,
+        .source_rect = null,
+        .dest_rect = null,
+        .world_draw_scale = 1,
+    };
+
     state.world.init();
-
-    state.time_state = .Stopped;
-    state.change_count = 0;
-    state.changes = [1]WorldChange{undefined} ** MAX_WORLD_CHANGE_COUNT;
-
-    state.window_width = window_width;
-    state.window_height = window_height;
-    state.render_texture = null;
-    state.source_rect = null;
-    state.dest_rect = null;
-    state.world_draw_scale = 1;
 
     return state;
 }
@@ -158,4 +172,3 @@ export fn draw(state_ptr: *anyopaque) void {
         }
     }
 }
-

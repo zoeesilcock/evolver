@@ -1,5 +1,5 @@
 const std = @import("std");
-const r = @import("dependencies/raylib.zig");
+const r = @import("dependencies/raylib.zig").r;
 
 const DEBUG = @import("builtin").mode == std.builtin.OptimizeMode.Debug;
 
@@ -17,10 +17,10 @@ var build_process: ?std.process.Child = null;
 var dyn_lib_last_modified: i128 = 0;
 var src_last_modified: i128 = 0;
 
-var evolverInit: *const fn(u32, u32) EvolverStatePtr = undefined;
-var evolverReload: *const fn(EvolverStatePtr) void = undefined;
-var evolverTick: *const fn(EvolverStatePtr) void = undefined;
-var evolverDraw: *const fn(EvolverStatePtr) void = undefined;
+var evolverInit: *const fn (u32, u32) callconv(.c) EvolverStatePtr = undefined;
+var evolverReload: *const fn (EvolverStatePtr) callconv(.c) void = undefined;
+var evolverTick: *const fn (EvolverStatePtr) callconv(.c) void = undefined;
+var evolverDraw: *const fn (EvolverStatePtr) callconv(.c) void = undefined;
 
 pub fn main() !void {
     r.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Evolver");
@@ -34,6 +34,7 @@ pub fn main() !void {
     _ = srcHasChanged();
 
     const allocator = std.heap.c_allocator;
+
     const state = evolverInit(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     while (!r.WindowShouldClose()) {
@@ -119,9 +120,9 @@ fn unloadDll() !void {
 }
 
 fn recompileDll(allocator: std.mem.Allocator) !void {
-    const process_args = [_][]const u8{ 
-        "zig", 
-        "build", 
+    const process_args = [_][]const u8{
+        "zig",
+        "build",
         "-Dlib_only=true",
     };
 
@@ -136,7 +137,7 @@ fn checkRecompileResult() !void {
             .Exited => |exited| {
                 if (exited == 2) return error.RecompileFail;
             },
-            else => return
+            else => return,
         }
 
         build_process = null;

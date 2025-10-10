@@ -5,29 +5,31 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const lib_only = b.option(bool, "lib_only", "only build the shared library") orelse false;
 
-    const lib = b.addSharedLibrary(.{
-        .name = "evolver",
+    const lib_module = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
+    const lib = b.addLibrary(.{
+        .name = "evolver",
+        .linkage = .dynamic,
+        .root_module = lib_module,
+    });
 
     const lib_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = lib_module,
     });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
     const raylib_dep = b.dependency("raylib", .{
         .target = target,
         .optimize = optimize,
-        .shared = true,
+        .linkage = .dynamic,
     });
     const raygui_dep = b.dependency("raygui", .{
         .target = target,
         .optimize = optimize,
-        .shared = true,
+        .linkage = .dynamic,
     });
 
     lib.linkLibrary(raylib_dep.artifact("raylib"));
@@ -37,11 +39,14 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(lib);
 
     if (!lib_only) {
-        const exe = b.addExecutable(.{
-            .name = "evolver",
+        const module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+        });
+        const exe = b.addExecutable(.{
+            .name = "evolver",
+            .root_module = module,
         });
         b.installArtifact(exe);
 
@@ -59,9 +64,7 @@ pub fn build(b: *std.Build) void {
         run_step.dependOn(&run_cmd.step);
 
         const exe_unit_tests = b.addTest(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = module,
         });
         const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 

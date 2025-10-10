@@ -1,4 +1,4 @@
-const r = @import("dependencies/raylib.zig");
+const r = @import("dependencies/raylib.zig").r;
 const State = @import("root.zig").State;
 
 pub fn draw(state: *State, width: f32) void {
