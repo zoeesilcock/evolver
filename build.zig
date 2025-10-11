@@ -48,7 +48,15 @@ pub fn build(b: *std.Build) void {
         const test_step = b.step("test", "Run unit tests");
         test_step.dependOn(&run_lib_unit_tests.step);
 
-        const exe = runtime.buildExecutable(runtime_dep.builder, b, build_options, target, optimize, test_step);
+        const exe = runtime.buildExecutable(
+            runtime_dep.builder,
+            b,
+            "evolver",
+            build_options,
+            target,
+            optimize,
+            test_step,
+        );
         b.installArtifact(exe);
     }
 }
