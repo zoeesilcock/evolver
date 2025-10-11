@@ -83,7 +83,6 @@ pub const State = struct {
         _ = sdl.SDL_GetWindowSize(self.window, @ptrCast(&self.window_width), @ptrCast(&self.window_height));
         self.world_scale = @as(f32, @floatFromInt(self.window_height)) / @as(f32, @floatFromInt(World.WIDTH));
 
-        std.log.info("setupRenderTexture", .{});
         const horizontal_offset: f32 = @as(f32, @floatFromInt(self.window_width)) -
             (@as(f32, @floatFromInt(World.WIDTH)) * self.world_scale);
         self.dest_rect = sdl.SDL_FRect{
