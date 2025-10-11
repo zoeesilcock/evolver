@@ -1,4 +1,5 @@
 const std = @import("std");
+const sdl_utils = @import("sdl");
 const sdl = @import("sdl").c;
 
 const World = @import("World.zig");
@@ -23,22 +24,6 @@ const WorldChange = struct {
     coords: WorldCoordinates,
     new_cell_type: WorldCell.WorldCellType,
 };
-
-fn sdlPanicIfNull(result: anytype, message: []const u8) @TypeOf(result) {
-    if (result == null) {
-        std.log.err("{s} SDL error: {s}", .{ message, sdl.SDL_GetError() });
-        @panic(message);
-    }
-
-    return result;
-}
-
-fn sdlPanic(result: bool, message: []const u8) void {
-    if (result == false) {
-        std.log.err("{s} SDL error: {s}", .{ message, sdl.SDL_GetError() });
-        @panic(message);
-    }
-}
 
 pub const State = struct {
     allocator: std.mem.Allocator,
@@ -92,7 +77,7 @@ pub const State = struct {
             .h = @as(f32, @floatFromInt(World.HEIGHT)) * self.world_scale,
         };
 
-        self.render_texture = sdlPanicIfNull(sdl.SDL_CreateTexture(
+        self.render_texture = sdl_utils.panicIfNull(sdl.SDL_CreateTexture(
             self.renderer,
             sdl.SDL_PIXELFORMAT_RGBA32,
             sdl.SDL_TEXTUREACCESS_TARGET,
@@ -100,7 +85,7 @@ pub const State = struct {
             @intCast(World.HEIGHT),
         ), "Failed to initialize main render texture.");
 
-        sdlPanic(
+        sdl_utils.panic(
             sdl.SDL_SetTextureScaleMode(self.render_texture, sdl.SDL_SCALEMODE_NEAREST),
             "Failed to set scale mode for the main render texture.",
         );
@@ -128,7 +113,7 @@ export fn init(window_width: u32, window_height: u32, window: *sdl.SDL_Window) *
         .window = window,
         .window_width = window_width,
         .window_height = window_height,
-        .renderer = sdlPanicIfNull(sdl.SDL_CreateRenderer(window, null), "Failed to create renderer.").?,
+        .renderer = sdl_utils.panicIfNull(sdl.SDL_CreateRenderer(window, null), "Failed to create renderer.").?,
         .dest_rect = undefined,
         .world_scale = 1,
     };
@@ -209,7 +194,7 @@ export fn tick(state_ptr: *anyopaque) void {
 export fn draw(state_ptr: *anyopaque) void {
     var state: *State = @ptrCast(@alignCast(state_ptr));
 
-    sdlPanic(sdl.SDL_SetRenderTarget(state.renderer, state.render_texture), "Failed to set render target.");
+    sdl_utils.panic(sdl.SDL_SetRenderTarget(state.renderer, state.render_texture), "Failed to set render target.");
     {
         _ = sdl.SDL_SetRenderDrawColor(state.renderer, 0, 0, 0, 255);
         _ = sdl.SDL_RenderClear(state.renderer);
