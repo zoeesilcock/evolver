@@ -2,6 +2,8 @@
 
 A life playground with very simple pixel based organisms. 
 
+![Screenshot](screenshot.png)
+
 
 ## Development
 To activate hot reloading, run this command in a separate terminal:
