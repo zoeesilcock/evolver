@@ -5,8 +5,8 @@
     .fingerprint = 0x5f661d785cd3694,
     .dependencies = .{
         .runtime = .{
-            .url = "git+https://github.com/zoeesilcock/gamedev-playground.git#014d09d2ef4c964e34764dad9f214ec5a9d7ba29",
-            .hash = "gamedev_playground-0.4.0-_fYZMVJpNAB2iemdtDln80i91Fii08IL8g37jrBEaj_I",
+            .url = "git+https://github.com/zoeesilcock/gamedev-playground.git#c3af148bb3d1246ede818ef9dfe7960af3b96456",
+            .hash = "gamedev_playground-0.6.0-_fYZMbC_NAAKC91Lid8W86uYOJluzIpi3B8-5uPBMNBL",
         },
     },
     .paths = .{

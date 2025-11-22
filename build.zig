@@ -39,8 +39,8 @@ pub fn build(b: *std.Build) void {
         b.installArtifact(sdl_lib);
     }
 
-    const sdl_mod = runtime_dep.module("sdl");
-    module.addImport("sdl", sdl_mod);
+    module.addImport("sdl", runtime_dep.module("sdl"));
+    module.addImport("aseprite", runtime_dep.module("aseprite"));
 
     b.installArtifact(lib);
 

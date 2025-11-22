@@ -1,10 +1,24 @@
 const std = @import("std");
 const sdl_utils = @import("sdl");
 const sdl = @import("sdl").c;
+const aseprite = @import("aseprite");
 
 const World = @import("World.zig");
 const WorldCell = @import("WorldCell.zig");
 const WorldCoordinates = @import("WorldCoordinates.zig");
+
+pub const Vector2 = @Vector(2, f32);
+pub const Color = @Vector(4, u8);
+
+pub const X = 0;
+pub const Y = 1;
+pub const Z = 2;
+pub const W = 3;
+
+pub const R = 0;
+pub const G = 1;
+pub const B = 2;
+pub const A = 3;
 
 const DebugAllocator = std.heap.DebugAllocator(.{
     .enable_memory_limit = true,
@@ -25,12 +39,36 @@ const WorldChange = struct {
     new_cell_type: WorldCell.WorldCellType,
 };
 
+pub const Assets = struct {
+    start_button: ?aseprite.AsepriteAsset = null,
+    stop_button: ?aseprite.AsepriteAsset = null,
+    step_button: ?aseprite.AsepriteAsset = null,
+    exit_button: ?aseprite.AsepriteAsset = null,
+
+    fn load(state: *State) void {
+        state.assets.start_button = .load("assets/start_button.aseprite", state.renderer, state.allocator);
+        state.assets.stop_button = .load("assets/stop_button.aseprite", state.renderer, state.allocator);
+        state.assets.step_button = .load("assets/step_button.aseprite", state.renderer, state.allocator);
+        state.assets.exit_button = .load("assets/exit_button.aseprite", state.renderer, state.allocator);
+    }
+
+    fn unload(state: *State) void {
+        state.assets.start_button.?.deinit(state.allocator);
+        state.assets.stop_button.?.deinit(state.allocator);
+        state.assets.step_button.?.deinit(state.allocator);
+        state.assets.exit_button.?.deinit(state.allocator);
+    }
+};
+
 pub const State = struct {
     allocator: std.mem.Allocator,
     time_state: TimeProgressState,
     world: World,
     change_count: u32,
     changes: [MAX_WORLD_CHANGE_COUNT]WorldChange,
+
+    assets: Assets,
+    input: Input,
 
     window: *sdl.SDL_Window,
     window_width: u32,
@@ -39,6 +77,19 @@ pub const State = struct {
     render_texture: *sdl.SDL_Texture = undefined,
     dest_rect: sdl.SDL_FRect = undefined,
     world_scale: f32,
+    continue_running: bool,
+
+    pub fn exit(state: *State) void {
+        state.continue_running = false;
+    }
+
+    pub fn startStopMode(state: *State) void {
+        state.time_state = if (state.time_state == .Running) .Stopped else .Running;
+    }
+
+    pub fn stepMode(state: *State) void {
+        state.time_state = .Step;
+    }
 
     pub fn addChange(self: *State, change: WorldChange) void {
         self.changes[self.change_count] = change;
@@ -92,6 +143,18 @@ pub const State = struct {
     }
 };
 
+const Input = struct {
+    left_mouse_down: bool = false,
+    left_mouse_pressed: bool = false,
+    left_mouse_last_time: u64 = 0,
+
+    mouse_position: Vector2 = @splat(0),
+
+    pub fn reset(self: *Input) void {
+        self.left_mouse_pressed = false;
+    }
+};
+
 export fn init(window_width: u32, window_height: u32, window: *sdl.SDL_Window) *anyopaque {
     var backing_allocator = std.heap.c_allocator;
 
@@ -110,16 +173,22 @@ export fn init(window_width: u32, window_height: u32, window: *sdl.SDL_Window) *
         .change_count = 0,
         .changes = [1]WorldChange{undefined} ** MAX_WORLD_CHANGE_COUNT,
 
+        .assets = .{},
+        .input = .{},
+
         .window = window,
         .window_width = window_width,
         .window_height = window_height,
         .renderer = sdl_utils.panicIfNull(sdl.SDL_CreateRenderer(window, null), "Failed to create renderer.").?,
         .dest_rect = undefined,
         .world_scale = 1,
+        .continue_running = true,
     };
 
     state.world.init();
     state.setupRenderTexture();
+
+    Assets.load(state);
 
     return state;
 }
@@ -134,19 +203,23 @@ export fn willReload(state_ptr: *anyopaque) void {
 }
 
 export fn reloaded(state_ptr: *anyopaque) void {
-    _ = state_ptr;
+    const state: *State = @ptrCast(@alignCast(state_ptr));
+    Assets.unload(state);
+    Assets.load(state);
 }
 
 export fn processInput(state_ptr: *anyopaque) bool {
     const state: *State = @ptrCast(@alignCast(state_ptr));
+    var input = &state.input;
 
-    var continue_running: bool = true;
+    input.reset();
+
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event)) {
         if (event.type == sdl.SDL_EVENT_QUIT or
             (event.type == sdl.SDL_EVENT_KEY_DOWN and event.key.key == sdl.SDLK_ESCAPE))
         {
-            continue_running = false;
+            state.exit();
             break;
         }
 
@@ -154,8 +227,8 @@ export fn processInput(state_ptr: *anyopaque) bool {
             const is_down = event.type == sdl.SDL_EVENT_KEY_DOWN;
             if (is_down) {
                 switch (event.key.key) {
-                    sdl.SDLK_RIGHT => state.time_state = .Step,
-                    sdl.SDLK_SPACE => state.time_state = if (state.time_state == .Running) .Stopped else .Running,
+                    sdl.SDLK_RIGHT => state.stepMode(),
+                    sdl.SDLK_SPACE => state.startStopMode(),
                     else => {},
                 }
             }
@@ -164,8 +237,22 @@ export fn processInput(state_ptr: *anyopaque) bool {
         if (event.type == sdl.SDL_EVENT_WINDOW_RESIZED) {
             state.setupRenderTexture();
         }
+
+        if (event.type == sdl.SDL_EVENT_MOUSE_MOTION) {
+            input.mouse_position = Vector2{ event.motion.x, event.motion.y };
+        } else if (event.type == sdl.SDL_EVENT_MOUSE_BUTTON_DOWN or event.type == sdl.SDL_EVENT_MOUSE_BUTTON_UP) {
+            const is_down = event.type == sdl.SDL_EVENT_MOUSE_BUTTON_DOWN;
+
+            switch (event.button.button) {
+                1 => {
+                    input.left_mouse_pressed = (input.left_mouse_down and !is_down);
+                    input.left_mouse_down = is_down;
+                },
+                else => {},
+            }
+        }
     }
-    return continue_running;
+    return state.continue_running;
 }
 
 export fn tick(state_ptr: *anyopaque) void {
@@ -199,7 +286,6 @@ export fn draw(state_ptr: *anyopaque) void {
         _ = sdl.SDL_SetRenderDrawColor(state.renderer, 0, 0, 0, 255);
         _ = sdl.SDL_RenderClear(state.renderer);
         drawWorld(state);
-        drawGameUI(state);
     }
 
     _ = sdl.SDL_SetRenderTarget(state.renderer, null);
@@ -207,6 +293,7 @@ export fn draw(state_ptr: *anyopaque) void {
         _ = sdl.SDL_SetRenderDrawColor(state.renderer, 80, 80, 80, 255);
         _ = sdl.SDL_RenderClear(state.renderer);
         _ = sdl.SDL_RenderTexture(state.renderer, state.render_texture, null, &state.dest_rect);
+        drawGameUI(state);
     }
     _ = sdl.SDL_RenderPresent(state.renderer);
 }
@@ -229,5 +316,75 @@ fn drawWorld(state: *State) void {
 }
 
 fn drawGameUI(state: *State) void {
-    _ = state;
+    const start_stop_button: ?aseprite.AsepriteAsset =
+        if (state.time_state == .Running) state.assets.stop_button else state.assets.start_button;
+
+    const vertical_spacing = 30;
+
+    var position = Vector2{ 10, vertical_spacing };
+    if (start_stop_button) |button| {
+        const size: Vector2 = .{
+            @floatFromInt(button.document.header.width),
+            @floatFromInt(button.document.header.height),
+        };
+        if (state.input.left_mouse_pressed and pointWithinArea(state.input.mouse_position, position, size)) {
+            state.startStopMode();
+        }
+        drawTextureAt(state, button.frames[0], position, @splat(1), @splat(255));
+
+        position[Y] += @floatFromInt(button.document.header.height);
+        position[Y] += vertical_spacing;
+    }
+
+    if (state.assets.step_button) |button| {
+        const size: Vector2 = .{
+            @floatFromInt(button.document.header.width),
+            @floatFromInt(button.document.header.height),
+        };
+        if (state.input.left_mouse_pressed and pointWithinArea(state.input.mouse_position, position, size)) {
+            state.stepMode();
+        }
+        drawTextureAt(state, button.frames[0], position, @splat(1), @splat(255));
+
+        position[Y] += @floatFromInt(button.document.header.height);
+        position[Y] += vertical_spacing;
+    }
+
+    if (state.assets.exit_button) |button| {
+        position[Y] += vertical_spacing;
+
+        const size: Vector2 = .{
+            @floatFromInt(button.document.header.width),
+            @floatFromInt(button.document.header.height),
+        };
+        if (state.input.left_mouse_pressed and pointWithinArea(state.input.mouse_position, position, size)) {
+            state.exit();
+        }
+        drawTextureAt(state, button.frames[0], position, @splat(1), @splat(255));
+
+        position[Y] += @floatFromInt(button.document.header.height);
+        position[Y] += vertical_spacing;
+    }
+}
+
+fn drawTextureAt(state: *State, texture: *sdl.SDL_Texture, position: Vector2, scale: Vector2, tint: Color) void {
+    const texture_rect = sdl.SDL_FRect{
+        .x = @round(position[X]),
+        .y = @round(position[Y]),
+        .w = @as(f32, @floatFromInt(texture.w)) * scale[X],
+        .h = @as(f32, @floatFromInt(texture.h)) * scale[Y],
+    };
+
+    sdl_utils.panic(sdl.SDL_SetTextureColorMod(texture, tint[R], tint[G], tint[B]), "Failed to set texture color mod.");
+    sdl_utils.panic(sdl.SDL_SetTextureAlphaMod(texture, tint[A]), "Failed to set texture alpha mod.");
+
+    _ = sdl.SDL_RenderTexture(state.renderer, texture, null, &texture_rect);
+}
+
+fn pointWithinArea(point: Vector2, area_origin: Vector2, area_size: Vector2) bool {
+    const relative_point = point - area_origin;
+    return relative_point[X] > 0 and
+        relative_point[Y] > 0 and
+        relative_point[X] <= area_size[X] and
+        relative_point[Y] <= area_size[Y];
 }
