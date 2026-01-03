@@ -157,6 +157,8 @@ const Input = struct {
 };
 
 export fn init(window_width: u32, window_height: u32, window: *sdl.SDL_Window) *anyopaque {
+    sdl_utils.logError(sdl.SDL_SetWindowTitle(window, "Evolver"), "Failed to set window title");
+
     var backing_allocator = std.heap.c_allocator;
 
     var game_allocator = (backing_allocator.create(DebugAllocator) catch @panic("Failed to initialize game allocator."));
