@@ -4,9 +4,9 @@
     .minimum_zig_version = "0.15.1",
     .fingerprint = 0x5f661d785cd3694,
     .dependencies = .{
-        .runtime = .{
-            .url = "git+https://github.com/zoeesilcock/gamedev-playground.git#c3af148bb3d1246ede818ef9dfe7960af3b96456",
-            .hash = "gamedev_playground-0.6.0-_fYZMbC_NAAKC91Lid8W86uYOJluzIpi3B8-5uPBMNBL",
+        .gamedev_playground = .{
+            .url = "git+https://github.com/zoeesilcock/gamedev-playground.git#23f202244c60d6873219dd359739ada253ae2e53",
+            .hash = "gamedev_playground-0.7.0-_fYZMREWAQDuUezwgWLPDU6sWAHiVTP4FbGTnOGTeHUd",
         },
     },
     .paths = .{

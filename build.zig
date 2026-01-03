@@ -1,5 +1,5 @@
 const std = @import("std");
-const runtime = @import("runtime");
+const gamedev_playground = @import("gamedev_playground");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -17,45 +17,48 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    module.addOptions("build_options", build_options);
+
     const lib = b.addLibrary(.{
-        .name = "evolver",
+        .name = lib_base_name,
         .linkage = .dynamic,
         .root_module = module,
     });
+    b.installArtifact(lib);
+
+    const lib_check = b.addLibrary(.{
+        .linkage = .dynamic,
+        .name = lib_base_name,
+        .root_module = module,
+    });
+    const check = b.step("check", "Check if it compiles");
+    check.dependOn(&lib_check.step);
 
     const lib_unit_tests = b.addTest(.{
         .root_module = module,
     });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_lib_unit_tests.step);
 
-    module.addOptions("build_options", build_options);
-
-    const runtime_dep = b.dependency("runtime", .{
+    // Integrate gamedev_playground.
+    const playground_dep = b.dependency("gamedev_playground", .{
         .target = target,
         .optimize = optimize,
     });
-    if (runtime.getSDL(runtime_dep.builder, target, optimize)) |sdl_lib| {
-        module.linkLibrary(sdl_lib);
-        b.installArtifact(sdl_lib);
-    }
-
-    module.addImport("sdl", runtime_dep.module("sdl"));
-    module.addImport("aseprite", runtime_dep.module("aseprite"));
-
-    b.installArtifact(lib);
+    const playground_mod = playground_dep.module("playground");
+    module.addImport("playground", playground_mod);
+    gamedev_playground.linkSDL(playground_dep.builder, lib, target, optimize);
 
     if (!lib_only) {
-        const test_step = b.step("test", "Run unit tests");
-        test_step.dependOn(&run_lib_unit_tests.step);
-
-        const exe = runtime.buildExecutable(
-            runtime_dep.builder,
+        const exe = gamedev_playground.buildExecutable(
+            playground_dep.builder,
             b,
             "evolver",
             build_options,
             target,
             optimize,
-            test_step,
+            playground_mod,
         );
         b.installArtifact(exe);
     }

@@ -1,7 +1,8 @@
 const std = @import("std");
-const sdl_utils = @import("sdl");
-const sdl = @import("sdl").c;
-const aseprite = @import("aseprite");
+const playground = @import("playground");
+const sdl_utils = playground.sdl;
+const sdl = playground.sdl.c;
+const aseprite = playground.aseprite;
 
 const World = @import("World.zig");
 const WorldCell = @import("WorldCell.zig");
