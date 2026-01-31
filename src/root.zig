@@ -3,7 +3,12 @@ const playground = @import("playground");
 const sdl_utils = playground.sdl;
 const sdl = playground.sdl.c;
 const aseprite = playground.aseprite;
+const imgui = if (INTERNAL) playground.imgui else struct {};
 
+// Build options.
+const INTERNAL: bool = @import("build_options").internal;
+
+const GameLib = playground.GameLib;
 const World = @import("World.zig");
 const WorldCell = @import("WorldCell.zig");
 const WorldCoordinates = @import("WorldCoordinates.zig");
@@ -62,6 +67,7 @@ pub const Assets = struct {
 };
 
 pub const State = struct {
+    dependencies: GameLib.Dependencies.Full2D,
     allocator: std.mem.Allocator,
     time_state: TimeProgressState,
     world: World,
@@ -72,13 +78,17 @@ pub const State = struct {
     input: Input,
 
     window: *sdl.SDL_Window,
-    window_width: u32,
-    window_height: u32,
     renderer: *sdl.SDL_Renderer,
     render_texture: *sdl.SDL_Texture = undefined,
     dest_rect: sdl.SDL_FRect = undefined,
+
     world_scale: f32,
     continue_running: bool,
+    fullscreen: bool,
+
+    internal: if (INTERNAL) extern struct {
+        output: *playground.internal.DebugOutputWindow = undefined,
+    } else extern struct {} = undefined,
 
     pub fn exit(state: *State) void {
         state.continue_running = false;
@@ -117,10 +127,12 @@ pub const State = struct {
     }
 
     pub fn setupRenderTexture(self: *State) void {
-        _ = sdl.SDL_GetWindowSize(self.window, @ptrCast(&self.window_width), @ptrCast(&self.window_height));
-        self.world_scale = @as(f32, @floatFromInt(self.window_height)) / @as(f32, @floatFromInt(World.WIDTH));
+        var window_width: c_int = 0;
+        var window_height: c_int = 0;
+        _ = sdl.SDL_GetWindowSize(self.window, &window_width, &window_height);
+        self.world_scale = @as(f32, @floatFromInt(window_height)) / @as(f32, @floatFromInt(World.WIDTH));
 
-        const horizontal_offset: f32 = @as(f32, @floatFromInt(self.window_width)) -
+        const horizontal_offset: f32 = @as(f32, @floatFromInt(window_width)) -
             (@as(f32, @floatFromInt(World.WIDTH)) * self.world_scale);
         self.dest_rect = sdl.SDL_FRect{
             .x = horizontal_offset,
@@ -156,9 +168,16 @@ const Input = struct {
     }
 };
 
-export fn init(window_width: u32, window_height: u32, window: *sdl.SDL_Window) *anyopaque {
-    sdl_utils.logError(sdl.SDL_SetWindowTitle(window, "Evolver"), "Failed to set window title");
+const settings: GameLib.Settings = .{
+    .title = "Evolver",
+    .dependencies = .Full2D,
+};
 
+pub export fn getSettings() GameLib.Settings {
+    return settings;
+}
+
+export fn init(dependencies: GameLib.Dependencies.Full2D) *anyopaque {
     var backing_allocator = std.heap.c_allocator;
 
     var game_allocator = (backing_allocator.create(DebugAllocator) catch @panic("Failed to initialize game allocator."));
@@ -168,6 +187,7 @@ export fn init(window_width: u32, window_height: u32, window: *sdl.SDL_Window) *
 
     var state: *State = allocator.create(State) catch @panic("Out of memory");
     state.* = .{
+        .dependencies = dependencies,
         .allocator = allocator,
 
         .world = .{},
@@ -179,14 +199,19 @@ export fn init(window_width: u32, window_height: u32, window: *sdl.SDL_Window) *
         .assets = .{},
         .input = .{},
 
-        .window = window,
-        .window_width = window_width,
-        .window_height = window_height,
-        .renderer = sdl_utils.panicIfNull(sdl.SDL_CreateRenderer(window, null), "Failed to create renderer.").?,
+        .window = dependencies.window,
+        .renderer = dependencies.renderer,
         .dest_rect = undefined,
+
         .world_scale = 1,
         .continue_running = true,
+        .fullscreen = false,
     };
+
+    if (INTERNAL) {
+        imgui.setup(state.dependencies.internal.imgui_context, .Renderer);
+        state.internal.output = dependencies.internal.output;
+    }
 
     state.world.init();
     state.setupRenderTexture();
@@ -232,6 +257,12 @@ export fn processInput(state_ptr: *anyopaque) bool {
                 switch (event.key.key) {
                     sdl.SDLK_RIGHT => state.stepMode(),
                     sdl.SDLK_SPACE => state.startStopMode(),
+                    sdl.SDLK_F => {
+                        if (is_down) {
+                            state.fullscreen = !state.fullscreen;
+                            _ = sdl.SDL_SetWindowFullscreen(state.window, state.fullscreen);
+                        }
+                    },
                     else => {},
                 }
             }

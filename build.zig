@@ -11,13 +11,14 @@ pub fn build(b: *std.Build) void {
     const build_options = b.addOptions();
     build_options.addOption(bool, "internal", internal);
     build_options.addOption([]const u8, "lib_base_name", lib_base_name);
+    const build_options_mod = build_options.createModule();
 
     const module = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
-    module.addOptions("build_options", build_options);
+    module.addImport("build_options", build_options_mod);
 
     const lib = b.addLibrary(.{
         .name = lib_base_name,
@@ -55,7 +56,7 @@ pub fn build(b: *std.Build) void {
             playground_dep.builder,
             b,
             "evolver",
-            build_options,
+            build_options_mod,
             target,
             optimize,
             playground_mod,
