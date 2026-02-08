@@ -255,6 +255,11 @@ export fn processInput(state_ptr: *anyopaque) bool {
             const is_down = event.type == sdl.SDL_EVENT_KEY_DOWN;
             if (is_down) {
                 switch (event.key.key) {
+                    sdl.SDLK_F1 => {
+                        if (INTERNAL) {
+                            state.dependencies.internal.fps_window.cycleMode();
+                        }
+                    },
                     sdl.SDLK_RIGHT => state.stepMode(),
                     sdl.SDLK_SPACE => state.startStopMode(),
                     sdl.SDLK_F => {
@@ -292,6 +297,10 @@ export fn processInput(state_ptr: *anyopaque) bool {
 export fn tick(state_ptr: *anyopaque) void {
     var state: *State = @ptrCast(@alignCast(state_ptr));
 
+    if (INTERNAL) {
+        state.dependencies.internal.fps_window.addFrameTime(sdl.SDL_GetPerformanceCounter());
+    }
+
     if (state.time_state != .Stopped) {
         state.change_count = 0;
 
@@ -328,6 +337,11 @@ export fn draw(state_ptr: *anyopaque) void {
         _ = sdl.SDL_RenderClear(state.renderer);
         _ = sdl.SDL_RenderTexture(state.renderer, state.render_texture, null, &state.dest_rect);
         drawGameUI(state);
+
+        imgui.newFrame();
+        state.dependencies.internal.fps_window.draw();
+        state.dependencies.internal.output.draw();
+        imgui.render(state.renderer);
     }
     _ = sdl.SDL_RenderPresent(state.renderer);
 }
