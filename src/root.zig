@@ -5,6 +5,11 @@ const sdl = playground.sdl.c;
 const aseprite = playground.aseprite;
 const imgui = if (INTERNAL) playground.imgui else struct {};
 
+pub const std_options: std.Options = .{
+    .log_level = if (INTERNAL) .info else .err,
+    .logFn = GameLib.logFn,
+};
+
 // Build options.
 const INTERNAL: bool = @import("build_options").internal;
 
@@ -178,17 +183,10 @@ pub export fn getSettings() GameLib.Settings {
 }
 
 export fn init(dependencies: GameLib.Dependencies.Full2D) *anyopaque {
-    var backing_allocator = std.heap.c_allocator;
-
-    var game_allocator = (backing_allocator.create(DebugAllocator) catch @panic("Failed to initialize game allocator."));
-    game_allocator.* = .init;
-
-    var allocator = game_allocator.allocator();
-
-    var state: *State = allocator.create(State) catch @panic("Out of memory");
+    var state: *State = dependencies.allocator.create(State) catch @panic("Out of memory");
     state.* = .{
         .dependencies = dependencies,
-        .allocator = allocator,
+        .allocator = dependencies.allocator.*,
 
         .world = .{},
 
@@ -230,8 +228,10 @@ export fn willReload(state_ptr: *anyopaque) void {
     _ = state_ptr;
 }
 
-export fn reloaded(state_ptr: *anyopaque) void {
+export fn reloaded(state_ptr: *anyopaque, imgui_context: ?*imgui.c.ImGuiContext) void {
     const state: *State = @ptrCast(@alignCast(state_ptr));
+    state.dependencies.internal.imgui_context = imgui_context.?;
+    imgui.setup(state.dependencies.internal.imgui_context, .Renderer);
     Assets.unload(state);
     Assets.load(state);
 }
