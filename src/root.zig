@@ -1,9 +1,9 @@
 const std = @import("std");
-const playground = @import("playground");
-const sdl_utils = playground.sdl;
-const sdl = playground.sdl.c;
-const aseprite = playground.aseprite;
-const imgui = if (INTERNAL) playground.imgui else struct {};
+const flint = @import("flint");
+const sdl_utils = flint.sdl;
+const sdl = flint.sdl.c;
+const aseprite = flint.aseprite;
+const imgui = if (INTERNAL) flint.imgui else struct {};
 
 pub const std_options: std.Options = .{
     .log_level = if (INTERNAL) .info else .err,
@@ -13,7 +13,7 @@ pub const std_options: std.Options = .{
 // Build options.
 const INTERNAL: bool = @import("build_options").internal;
 
-const GameLib = playground.GameLib;
+const GameLib = flint.GameLib;
 const World = @import("World.zig");
 const WorldCell = @import("WorldCell.zig");
 const WorldCoordinates = @import("WorldCoordinates.zig");
@@ -92,7 +92,7 @@ pub const State = struct {
     fullscreen: bool,
 
     internal: if (INTERNAL) extern struct {
-        output: *playground.internal.DebugOutputWindow = undefined,
+        output: *flint.internal.DebugOutputWindow = undefined,
     } else extern struct {} = undefined,
 
     pub fn exit(state: *State) void {
