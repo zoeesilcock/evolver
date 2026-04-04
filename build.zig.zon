@@ -1,12 +1,12 @@
 .{
     .name = .evolver,
     .version = "0.1.0",
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.15.2",
     .fingerprint = 0x5f661d785cd3694,
     .dependencies = .{
         .flint = .{
-            .url = "git+https://github.com/zoeesilcock/flint.git#2795af76c809a0bf22776fb6b36b6d852d32d751",
-            .hash = "flint-0.9.0-PsSSI4tVAQBb8xl7XWR15w2RJj49WREuKvXRkpnip5m1",
+            .url = "git+https://github.com/zoeesilcock/flint.git#v0.10.0",
+            .hash = "flint-0.10.0-PsSSI6GfAQDdfiEr6MgC2SdzJzj2OHCChqpZC1ycqBMU",
         },
     },
     .paths = .{

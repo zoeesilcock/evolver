@@ -25,7 +25,7 @@ pub fn build(b: *std.Build) void {
         .linkage = .dynamic,
         .root_module = module,
     });
-    b.installArtifact(lib);
+    b.getInstallStep().dependOn(&b.addInstallArtifact(lib, .{}).step);
 
     const lib_check = b.addLibrary(.{
         .linkage = .dynamic,
@@ -49,7 +49,7 @@ pub fn build(b: *std.Build) void {
     });
     const flint_mod = flint_dep.module("flint");
     module.addImport("flint", flint_mod);
-    flint.linkSDL(flint_dep.builder, lib, target, optimize);
+    flint.linkSDL(flint_dep.builder, lib, target, optimize, b.getInstallStep());
 
     if (!lib_only) {
         const exe = flint.buildExecutable(
@@ -60,7 +60,8 @@ pub fn build(b: *std.Build) void {
             target,
             optimize,
             flint_mod,
+            b.getInstallStep(),
         );
-        b.installArtifact(exe);
+        b.getInstallStep().dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 }
