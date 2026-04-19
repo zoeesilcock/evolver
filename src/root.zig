@@ -7,7 +7,6 @@ const imgui = if (INTERNAL) flint.imgui else struct {};
 
 pub const std_options: std.Options = .{
     .log_level = if (INTERNAL) .info else .err,
-    .logFn = GameLib.logFn,
 };
 
 // Build options.
@@ -57,10 +56,11 @@ pub const Assets = struct {
     exit_button: ?aseprite.AsepriteAsset = null,
 
     fn load(state: *State) void {
-        state.assets.start_button = .load("assets/start_button.aseprite", state.renderer, state.allocator);
-        state.assets.stop_button = .load("assets/stop_button.aseprite", state.renderer, state.allocator);
-        state.assets.step_button = .load("assets/step_button.aseprite", state.renderer, state.allocator);
-        state.assets.exit_button = .load("assets/exit_button.aseprite", state.renderer, state.allocator);
+        const io: std.Io = state.dependencies.io.*;
+        state.assets.start_button = .load("assets/start_button.aseprite", state.renderer, state.allocator, io);
+        state.assets.stop_button = .load("assets/stop_button.aseprite", state.renderer, state.allocator, io);
+        state.assets.step_button = .load("assets/step_button.aseprite", state.renderer, state.allocator, io);
+        state.assets.exit_button = .load("assets/exit_button.aseprite", state.renderer, state.allocator, io);
     }
 
     fn unload(state: *State) void {
