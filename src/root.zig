@@ -175,14 +175,13 @@ const Input = struct {
 
 const settings: GameLib.Settings = .{
     .title = "Evolver",
-    .dependencies = .Full2D,
 };
 
 pub export fn getSettings() GameLib.Settings {
     return settings;
 }
 
-export fn init(dependencies: GameLib.Dependencies.Full2D) *anyopaque {
+export fn initFull2D(dependencies: GameLib.Dependencies.Full2D) *anyopaque {
     var state: *State = dependencies.allocator.create(State) catch @panic("Out of memory");
     state.* = .{
         .dependencies = dependencies,
