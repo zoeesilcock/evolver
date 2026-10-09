@@ -191,7 +191,7 @@ export fn initFull2D(dependencies: GameLib.Dependencies.Full2D) *anyopaque {
 
         .time_state = .Stopped,
         .change_count = 0,
-        .changes = [1]WorldChange{undefined} ** MAX_WORLD_CHANGE_COUNT,
+        .changes = undefined,
 
         .assets = .{},
         .input = .{},

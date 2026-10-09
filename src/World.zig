@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const WorldCoordinates = @import("WorldCoordinates.zig"); 
+const WorldCoordinates = @import("WorldCoordinates.zig");
 const WorldCell = @import("WorldCell.zig");
 const WorldCellType = WorldCell.WorldCellType;
 
@@ -8,7 +8,7 @@ pub const WIDTH: i32 = 75;
 pub const HEIGHT: i32 = 75;
 pub const WORLD_LENGTH: u32 = WIDTH * HEIGHT;
 
-cells: [WORLD_LENGTH]WorldCell = [1]WorldCell{WorldCell{}} ** WORLD_LENGTH,
+cells: [WORLD_LENGTH]WorldCell = @splat(.{}),
 
 const World = @This();
 
