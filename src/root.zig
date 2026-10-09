@@ -3,7 +3,7 @@ const flint = @import("flint");
 const sdl_utils = flint.sdl;
 const sdl = flint.sdl.c;
 const aseprite = flint.aseprite;
-const imgui = if (INTERNAL) flint.imgui else struct {};
+const imgui = flint.imgui;
 
 pub const std_options: std.Options = .{
     .log_level = if (INTERNAL) .info else .err,
@@ -227,10 +227,12 @@ export fn willReload(state_ptr: *anyopaque) void {
     _ = state_ptr;
 }
 
-export fn reloaded(state_ptr: *anyopaque, imgui_context: ?*imgui.c.ImGuiContext) void {
+export fn reloaded(state_ptr: *anyopaque, imgui_context: ?*imgui.ImGuiContext) void {
     const state: *State = @ptrCast(@alignCast(state_ptr));
-    state.dependencies.internal.imgui_context = imgui_context.?;
-    imgui.setup(state.dependencies.internal.imgui_context, .Renderer);
+    if (INTERNAL) {
+        state.dependencies.internal.imgui_context = imgui_context.?;
+        imgui.setup(state.dependencies.internal.imgui_context, .Renderer);
+    }
     Assets.unload(state);
     Assets.load(state);
 }
@@ -337,10 +339,12 @@ export fn draw(state_ptr: *anyopaque) void {
         _ = sdl.SDL_RenderTexture(state.renderer, state.render_texture, null, &state.dest_rect);
         drawGameUI(state);
 
-        imgui.newFrame();
-        state.dependencies.internal.fps_window.draw();
-        state.dependencies.internal.output.draw();
-        imgui.render(state.renderer);
+        if (INTERNAL) {
+            imgui.newFrame();
+            state.dependencies.internal.fps_window.draw();
+            state.dependencies.internal.output.draw();
+            imgui.render(state.renderer);
+        }
     }
     _ = sdl.SDL_RenderPresent(state.renderer);
 }
