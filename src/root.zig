@@ -258,7 +258,7 @@ export fn processInput(state_ptr: *anyopaque) bool {
                 switch (event.key.key) {
                     sdl.SDLK_F1 => {
                         if (INTERNAL) {
-                            state.dependencies.internal.fps_window.cycleMode();
+                            state.dependencies.internal.frame_timings_window.cycleDisplayMode();
                         }
                     },
                     sdl.SDLK_RIGHT => state.stepMode(),
@@ -297,10 +297,6 @@ export fn processInput(state_ptr: *anyopaque) bool {
 
 export fn tick(state_ptr: *anyopaque) void {
     var state: *State = @ptrCast(@alignCast(state_ptr));
-
-    if (INTERNAL) {
-        state.dependencies.internal.fps_window.addFrameTime(sdl.SDL_GetPerformanceCounter());
-    }
 
     if (state.time_state != .Stopped) {
         state.change_count = 0;
@@ -341,8 +337,8 @@ export fn draw(state_ptr: *anyopaque) void {
 
         if (INTERNAL) {
             imgui.newFrame();
-            state.dependencies.internal.fps_window.draw();
             state.dependencies.internal.output.draw();
+            state.dependencies.internal.frame_timings_window.draw();
             imgui.render(state.renderer);
         }
     }
